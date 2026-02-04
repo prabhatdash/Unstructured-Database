@@ -5,10 +5,8 @@ from datetime import datetime
 
 TOPIC = "iot_sensor_data"
 
-# Kafka (host-accessible)
 KAFKA_BOOTSTRAP = "localhost:9092"
 
-# MongoDB (host-accessible)
 MONGO_URI = "mongodb://localhost:27017"
 DB_NAME = "iot_db"
 COLLECTION = "sensor_data"
@@ -19,7 +17,7 @@ col = mongo_client[DB_NAME][COLLECTION]
 consumer = KafkaConsumer(
     TOPIC,
     bootstrap_servers=[KAFKA_BOOTSTRAP],
-    auto_offset_reset="latest",     # use "earliest" if you want old messages too
+    auto_offset_reset="latest",     
     enable_auto_commit=True,
     group_id="iot-mongo-consumer",
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
@@ -31,7 +29,7 @@ try:
     for message in consumer:
         data = message.value
 
-        # Optional: add ingestion timestamp
+       
         data["ingested_at"] = datetime.utcnow().isoformat()
 
         result = col.insert_one(data)
