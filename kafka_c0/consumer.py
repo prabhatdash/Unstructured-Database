@@ -1,22 +1,45 @@
 import json
 from kafka import KafkaConsumer
+from pymongo import MongoClient
+from datetime import datetime
+
+TOPIC = "iot_sensor_data"
+
+# Kafka (host-accessible)
+KAFKA_BOOTSTRAP = "localhost:9092"
+
+# MongoDB (host-accessible)
+MONGO_URI = "mongodb://localhost:27017"
+DB_NAME = "iot_db"
+COLLECTION = "sensor_data"
+
+mongo_client = MongoClient(MONGO_URI)
+col = mongo_client[DB_NAME][COLLECTION]
 
 consumer = KafkaConsumer(
-    'iot_sensor_data',
-    bootstrap_servers=['localhost:9092'],
-    auto_offset_reset='earliest',  # Read from the start if no offset is saved
-    enable_auto_commit=True,       # Automatically mark messages as 'read'
-    group_id='my-sensor-group',    # Consumer group ID
-    value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+    TOPIC,
+    bootstrap_servers=[KAFKA_BOOTSTRAP],
+    auto_offset_reset="latest",     # use "earliest" if you want old messages too
+    enable_auto_commit=True,
+    group_id="iot-mongo-consumer",
+    value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
 
-print("Consumer started. Waiting for messages...")
+print("Kafka → MongoDB consumer started. Waiting for messages...")
 
 try:
     for message in consumer:
         data = message.value
-        print(f"Consumed: {data} | Partition: {message.partition} | Offset: {message.offset}")
+
+        # Optional: add ingestion timestamp
+        data["ingested_at"] = datetime.utcnow().isoformat()
+
+        result = col.insert_one(data)
+        print(f"Inserted {result.inserted_id} | Offset {message.offset} | Data: {data}")
+
 except KeyboardInterrupt:
-    print("Consumer shutting down...")
+    print("Stopping consumer...")
+
 finally:
     consumer.close()
+    mongo_client.close()
