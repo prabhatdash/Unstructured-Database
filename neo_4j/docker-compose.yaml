@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  neo4j:
+    image: neo4j:5.19
+    container_name: neo4j_db
+
+    restart: unless-stopped
+
+    ports:
+      - "7474:7474"   # Neo4j Browser (HTTP)
+      - "7687:7687"   # Bolt Protocol (for apps / Python)
+
+    environment:
+      # Set your username/password here
+      NEO4J_AUTH: neo4j/StrongPassword123
+
+      # Memory tuning (important for large datasets / HPC)
+      NEO4J_server_memory_heap_initial__size: 4G
+      NEO4J_server_memory_heap_max__size: 8G
+      NEO4J_server_memory_pagecache_size: 4G
+
+      # Enable APOC (useful for analytics / ETL)
+      NEO4JLABS_PLUGINS: '["apoc"]'
+      NEO4J_apoc_export_file_enabled: "true"
+      NEO4J_apoc_import_file_enabled: "true"
+      NEO4J_apoc_import_file_use__neo4j__config: "true"
+
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+
+    ulimits:
+      nofile:
+        soft: 40000
+        hard: 40000
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
