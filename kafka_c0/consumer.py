@@ -23,12 +23,16 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
 
-print("Kafka → MongoDB consumer started. Waiting for messages...")
+
+
+
+
+# print("Kafka → MongoDB consumer started. Waiting for messages...")
 
 try:
     for message in consumer:
         data = message.value
-
+        print(message)
        
         data["ingested_at"] = datetime.utcnow().isoformat()
 
